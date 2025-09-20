@@ -1,15 +1,6 @@
-import sys
-from pathlib import Path
-from datetime import datetime
 import streamlit as st
-
-# ================= Safe imports =================
-PROJECT_ROOT = Path(__file__).parent.resolve()
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.append(str(PROJECT_ROOT))
-
-# Import utils modules safely
-from utils import parser, scorer, storage
+from datetime import datetime
+from utils import parser, scorer, storage  # parser for text extraction, scorer for evaluation, storage for JSON DB
 
 # ==================== Page Config ====================
 st.set_page_config(
@@ -52,7 +43,7 @@ def render_metrics():
     active_jobs = len(jds)
     high_quality_matches = len([e for e in evals if e.get('score',0)>=80])
     avg_processing_time="24s"
-    
+
     col1,col2,col3,col4=st.columns(4)
     with col1:
         st.metric("Total Resumes Processed",total_resumes)
@@ -83,26 +74,21 @@ def render_upload_section():
     jd_id = st.text_input("Associated Job ID")
     if st.button("Process Upload") and uploaded_files and jd_id:
         for file in uploaded_files:
-            # Extract text from resume
             resume_text = parser.extract_text(file)
-            
-            # Compute scores
-            relevance_score = scorer.compute_score(resume_text)
-            verdict = scorer.get_verdict(relevance_score)
-            missing_skills = scorer.get_missing_skills(resume_text, jd_id)
-            improvement_suggestions = scorer.get_improvement_suggestions(resume_text, jd_id)
-            
-            # Save evaluation
+            score = scorer.compute_score(resume_text)
+            verdict = scorer.get_verdict(score)
+            missing_skills = scorer.get_missing_skills(resume_text)
+            improvement = scorer.get_improvement_suggestions(resume_text)
             storage.add_evaluation({
                 "jd_id": jd_id,
                 "candidate": file.name,
-                "score": relevance_score,
+                "score": score,
                 "verdict": verdict,
                 "missing_skills": missing_skills,
-                "improvement_suggestions": improvement_suggestions,
+                "improvement_suggestions": improvement,
                 "timestamp": str(datetime.now())
             })
-        st.success(f"{len(uploaded_files)} resumes processed successfully!")
+        st.success(f"{len(uploaded_files)} resumes processed and stored successfully!")
 
 # ==================== Jobs ====================
 def render_jobs_section():
@@ -129,7 +115,7 @@ def render_results_section():
         return
 
     # Filters
-    col1,col2,col3=st.columns(3)
+    col1,col2,col3 = st.columns(3)
     with col1:
         min_score = st.slider("Minimum Score",0,100,0)
     with col2:
@@ -137,7 +123,7 @@ def render_results_section():
     with col3:
         locations = sorted({jd.get("location") for jd in jds.values() if jd.get("location")})
         loc_filter = st.selectbox("Location",["All"]+locations)
-    
+
     filtered = evals
     if min_score>0:
         filtered = [e for e in filtered if e.get('score',0)>=min_score]
@@ -148,11 +134,16 @@ def render_results_section():
 
     for e in filtered[:50]:
         jd = jds.get(e.get('jd_id'),{})
-        st.markdown(f"**Candidate:** {e.get('candidate')} | **Score:** {e.get('score'):.1f} | **Verdict:** {e.get('verdict')}")
-        st.markdown(f"- **Job:** {jd.get('title','N/A')} | **Location:** {jd.get('location','N/A')}")
-        st.markdown(f"- **Missing Skills:** {', '.join(e.get('missing_skills',[])) or 'None'}")
-        st.markdown(f"- **Improvement Suggestions:** {', '.join(e.get('improvement_suggestions',[])) or 'None'}")
-        st.markdown("---")
+        st.markdown(f"""
+        **Candidate:** {e.get('candidate')}  
+        **Score:** {e.get('score')}  
+        **Verdict:** {e.get('verdict')}  
+        **Missing Skills:** {', '.join(e.get('missing_skills',[])) if e.get('missing_skills') else 'None'}  
+        **Improvement Suggestions:** {', '.join(e.get('improvement_suggestions',[])) if e.get('improvement_suggestions') else 'None'}  
+        **Job:** {jd.get('title','N/A')}  
+        **Location:** {jd.get('location','N/A')}  
+        ---
+        """)
 
 # ==================== Main ====================
 def main():

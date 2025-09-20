@@ -8,14 +8,12 @@ import sys
 import os
 
 # ----------------- Absolute-safe import fix -----------------
-# Add the utils folder to sys.path so Python can always find it
 current_dir = Path(__file__).parent
-utils_path = current_dir / "utils"
-sys.path.append(str(utils_path))
+sys.path.append(str(current_dir / "utils"))
 
-import parser
-import scorer
-import storage
+import parser as parser_module
+import scorer as scorer_module
+import storage as storage_module
 # ------------------------------------------------------------
 
 # ==================== Page Config ====================
@@ -53,8 +51,8 @@ def render_navigation():
 
 # ==================== Dashboard ====================
 def render_metrics():
-    evals = storage.list_evaluations()
-    jds = storage.list_jds()
+    evals = storage_module.list_evaluations()
+    jds = storage_module.list_jds()
     total_resumes = len(evals)
     active_jobs = len(jds)
     high_quality_matches = len([e for e in evals if e.get('score',0)>=80])
@@ -90,10 +88,10 @@ def render_upload_section():
     jd_id = st.text_input("Associated Job ID")
     if st.button("Process Upload") and uploaded_files and jd_id:
         for file in uploaded_files:
-            text = parser.extract_text(file)
-            score = scorer.compute_score(text)
-            verdict = scorer.get_verdict(score)
-            storage.add_evaluation({
+            text = parser_module.extract_text(file)
+            score = scorer_module.compute_score(text)
+            verdict = scorer_module.get_verdict(score)
+            storage_module.add_evaluation({
                 "jd_id":jd_id,
                 "candidate":file.name,
                 "score":score,
@@ -109,7 +107,7 @@ def render_jobs_section():
     location = st.text_input("Location")
     jd_id = st.text_input("Job ID (Unique)")
     if st.button("Create Job Posting") and job_title and jd_id:
-        storage.add_jd({
+        storage_module.add_jd({
             "id":jd_id,
             "title":job_title,
             "location":location,
@@ -120,8 +118,8 @@ def render_jobs_section():
 # ==================== Results ====================
 def render_results_section():
     st.subheader("📋 Evaluation Results")
-    evals = storage.list_evaluations()
-    jds = {jd["id"]:jd for jd in storage.list_jds()}
+    evals = storage_module.list_evaluations()
+    jds = {jd["id"]:jd for jd in storage_module.list_jds()}
     if not evals:
         st.info("No evaluations yet.")
         return

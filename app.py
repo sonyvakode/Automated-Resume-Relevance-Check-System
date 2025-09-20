@@ -1,7 +1,15 @@
-import streamlit as st
+import sys
 from pathlib import Path
 from datetime import datetime
-from utils import parser, scorer, storage
+import streamlit as st
+
+# ================= Safe imports =================
+# Ensure Python can find 'utils' package regardless of working directory
+PROJECT_ROOT = Path(__file__).parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+
+from utils import parser, scorer, storage  # Your scoring, parsing, storage logic
 
 # ==================== Page Config ====================
 st.set_page_config(
@@ -32,7 +40,7 @@ def render_navigation():
     for i,(icon,label,key) in enumerate(nav_items):
         col=[col1,col2,col3,col4][i]
         with col:
-            if st.button(f"{icon}\n{label}",key=f"nav_{key}",use_container_width=True):
+            if st.button(f"{icon}\n{label}", key=f"nav_{key}", use_container_width=True):
                 st.session_state.selected_tab=key
                 st.rerun()
 
@@ -71,23 +79,26 @@ def render_dashboard():
 # ==================== Upload Resumes ====================
 def render_upload_section():
     st.subheader("📤 Upload Resumes")
-    uploaded_files = st.file_uploader("Select resumes",accept_multiple_files=True)
+    uploaded_files = st.file_uploader("Select resumes", accept_multiple_files=True)
     jd_id = st.text_input("Associated Job ID")
     if st.button("Process Upload") and uploaded_files and jd_id:
         for file in uploaded_files:
             resume_text = parser.extract_text(file)
+            
+            # ===== Scoring & Evaluation =====
             score = scorer.compute_score(resume_text)
             verdict = scorer.get_verdict(score)
-            missing = scorer.get_missing_skills(resume_text)
-            suggestions = scorer.get_improvement_suggestions(resume_text)
+            missing_skills = scorer.get_missing_skills(resume_text, jd_id)
+            suggestions = scorer.get_improvement_suggestions(resume_text, jd_id)
             
+            # Store evaluation
             storage.add_evaluation({
                 "jd_id": jd_id,
                 "candidate": file.name,
                 "score": score,
                 "verdict": verdict,
-                "missing_skills": missing,
-                "improvement_suggestions": suggestions,
+                "missing_skills": missing_skills,
+                "suggestions": suggestions,
                 "timestamp": str(datetime.now())
             })
         st.success(f"{len(uploaded_files)} resumes processed and stored successfully!")
@@ -112,49 +123,58 @@ def render_results_section():
     st.subheader("📋 Evaluation Results")
     evals = storage.list_evaluations()
     jds = {jd["id"]: jd for jd in storage.list_jds()}
+    
     if not evals:
         st.info("No evaluations yet.")
         return
-
+    
+    # Filters
     col1,col2,col3=st.columns(3)
     with col1:
         min_score = st.slider("Minimum Score",0,100,0)
     with col2:
-        verdict_filter = st.selectbox("Verdict",["All","High","Medium","Low"])
+        verdict_filter = st.selectbox("Verdict", ["All","High","Medium","Low"])
     with col3:
         locations = sorted({jd.get("location") for jd in jds.values() if jd.get("location")})
-        loc_filter = st.selectbox("Location",["All"]+locations)
+        loc_filter = st.selectbox("Location", ["All"] + locations)
     
     filtered = evals
     if min_score>0:
-        filtered = [e for e in filtered if e.get('score',0)>=min_score]
-    if verdict_filter!="All":
-        filtered = [e for e in filtered if e.get('verdict')==verdict_filter]
-    if loc_filter!="All":
-        filtered = [e for e in filtered if jds.get(e.get('jd_id'),{}).get('location')==loc_filter]
-
+        filtered = [e for e in filtered if e.get('score',0) >= min_score]
+    if verdict_filter != "All":
+        filtered = [e for e in filtered if e.get('verdict') == verdict_filter]
+    if loc_filter != "All":
+        filtered = [e for e in filtered if jds.get(e.get('jd_id'), {}).get('location') == loc_filter]
+    
+    # Display evaluation results
     for e in filtered[:50]:
-        jd = jds.get(e.get('jd_id'),{})
-        st.write(f"**{e.get('candidate')}** | Score: {e.get('score'):.1f} | Verdict: {e.get('verdict')} | "
-                 f"Missing Skills: {', '.join(e.get('missing_skills',[]))} | "
-                 f"Suggestions: {', '.join(e.get('improvement_suggestions',[]))} | "
-                 f"Job: {jd.get('title','N/A')} | Location: {jd.get('location','N/A')}")
+        jd = jds.get(e.get('jd_id'), {})
+        st.markdown(f"""
+        **Candidate:** {e.get('candidate')}  
+        **Job:** {jd.get('title','N/A')} | **Location:** {jd.get('location','N/A')}  
+        **Relevance Score:** {e.get('score')}  
+        **Verdict:** {e.get('verdict')}  
+        **Missing Skills:** {', '.join(e.get('missing_skills',[]))}  
+        **Improvement Suggestions:** {', '.join(e.get('suggestions',[]))}
+        """)
+        st.write("---")
 
 # ==================== Main ====================
 def main():
     if 'selected_tab' not in st.session_state:
-        st.session_state.selected_tab='dashboard'
+        st.session_state.selected_tab = 'dashboard'
     render_header()
     render_navigation()
+    
     tab = st.session_state.get('selected_tab','dashboard')
-    if tab=='dashboard':
+    if tab == 'dashboard':
         render_dashboard()
-    elif tab=='upload':
+    elif tab == 'upload':
         render_upload_section()
-    elif tab=='jobs':
+    elif tab == 'jobs':
         render_jobs_section()
-    elif tab=='results':
+    elif tab == 'results':
         render_results_section()
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()

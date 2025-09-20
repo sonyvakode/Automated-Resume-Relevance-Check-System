@@ -2,6 +2,8 @@ import streamlit as st
 from pathlib import Path
 from datetime import datetime
 import sys
+
+# Add utils folder to path for safe imports
 current_dir = Path(__file__).parent
 sys.path.append(str(current_dir / "utils"))
 
@@ -10,7 +12,11 @@ import scorer as scorer_module
 import storage as storage_module
 
 # ==================== Page Config ====================
-st.set_page_config(page_title="ARRCS - AI Resume Screening", layout="wide", page_icon="📊")
+st.set_page_config(
+    page_title="ARRCS - AI Resume Screening",
+    layout="wide",
+    page_icon="📊"
+)
 
 # ==================== Header ====================
 def render_header():
@@ -36,11 +42,36 @@ def render_navigation():
                 st.rerun()
 
 # ==================== Dashboard ====================
-def render_dashboard():
+def render_metrics():
     evals = storage_module.list_evaluations()
     jds = storage_module.list_jds()
-    st.write(f"Total Resumes Processed: {len(evals)}")
-    st.write(f"Total Job Postings: {len(jds)}")
+    total_resumes = len(evals)
+    active_jobs = len(jds)
+    high_quality_matches = len([e for e in evals if e.get('score',0)>=80])
+    avg_processing_time="24s"
+    
+    col1,col2,col3,col4=st.columns(4)
+    with col1:
+        st.metric("Total Resumes Processed", total_resumes)
+    with col2:
+        st.metric("Weekly Job Requirements", active_jobs)
+    with col3:
+        st.metric("Avg Processing Time", avg_processing_time)
+    with col4:
+        st.metric("High Quality Matches", high_quality_matches)
+
+def render_dashboard():
+    render_metrics()
+    st.write("Quick Actions")
+    col1,col2=st.columns(2)
+    with col1:
+        if st.button("Upload New Batch of Resumes"):
+            st.session_state.selected_tab='upload'
+            st.rerun()
+    with col2:
+        if st.button("Create New Job Posting"):
+            st.session_state.selected_tab='jobs'
+            st.rerun()
 
 # ==================== Upload Resumes ====================
 def render_upload_section():

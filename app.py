@@ -5,12 +5,13 @@ import json
 import pandas as pd
 from datetime import datetime
 
-# Ensure utils folder is on path
+# ==================== Ensure utils folder is on path ====================
 sys.path.append(str(Path(__file__).parent / "utils"))
 
-import parser   # parser.py inside utils
-import scorer   # scorer.py inside utils
-import storage  # storage.py inside utils
+# ==================== Imports ====================
+import resume_parser as parser  # renamed parser.py -> resume_parser.py
+import scorer
+import storage
 
 # ==================== Page Config ====================
 st.set_page_config(
@@ -41,8 +42,8 @@ def render_navigation():
     for i,(icon,label,key) in enumerate(nav_items):
         col=[col1,col2,col3,col4][i]
         with col:
-            if st.button(f"{icon}\n{label}",key=f"nav_{key}",use_container_width=True):
-                st.session_state.selected_tab=key
+            if st.button(f"{icon}\n{label}", key=f"nav_{key}", use_container_width=True):
+                st.session_state.selected_tab = key
                 st.rerun()
 
 # ==================== Dashboard ====================
@@ -52,22 +53,22 @@ def render_metrics():
     total_resumes = len(evals)
     active_jobs = len(jds)
     high_quality_matches = len([e for e in evals if e.get('score',0)>=80])
-    avg_processing_time="24s"
+    avg_processing_time = "24s"
     
-    col1,col2,col3,col4=st.columns(4)
+    col1,col2,col3,col4 = st.columns(4)
     with col1:
-        st.metric("Total Resumes Processed",total_resumes)
+        st.metric("Total Resumes Processed", total_resumes)
     with col2:
-        st.metric("Weekly Job Requirements",active_jobs)
+        st.metric("Weekly Job Requirements", active_jobs)
     with col3:
-        st.metric("Avg Processing Time",avg_processing_time)
+        st.metric("Avg Processing Time", avg_processing_time)
     with col4:
-        st.metric("High Quality Matches",high_quality_matches)
+        st.metric("High Quality Matches", high_quality_matches)
 
 def render_dashboard():
     render_metrics()
     st.write("Quick Actions")
-    col1,col2=st.columns(2)
+    col1,col2 = st.columns(2)
     with col1:
         if st.button("Upload New Batch of Resumes"):
             st.session_state.selected_tab='upload'
@@ -80,7 +81,7 @@ def render_dashboard():
 # ==================== Upload Resumes ====================
 def render_upload_section():
     st.subheader("📤 Upload Resumes")
-    uploaded_files = st.file_uploader("Select resumes (PDF/DOCX)", accept_multiple_files=True)
+    uploaded_files = st.file_uploader("Select resumes", accept_multiple_files=True)
     jd_id = st.text_input("Associated Job ID")
     if st.button("Process Upload") and uploaded_files and jd_id:
         for file in uploaded_files:
@@ -98,7 +99,7 @@ def render_upload_section():
                 "suggestions": suggestions,
                 "timestamp": str(datetime.now())
             })
-        st.success(f"{len(uploaded_files)} resumes processed successfully!")
+        st.success(f"{len(uploaded_files)} resumes processed and stored successfully!")
 
 # ==================== Jobs ====================
 def render_jobs_section():
@@ -124,45 +125,45 @@ def render_results_section():
         st.info("No evaluations yet.")
         return
     
+    # Filters
     col1,col2,col3 = st.columns(3)
     with col1:
         min_score = st.slider("Minimum Score", 0, 100, 0)
     with col2:
-        verdict_filter = st.selectbox("Verdict", ["All","High","Medium","Low"])
+        verdict_filter = st.selectbox("Verdict", ["All", "High", "Medium", "Low"])
     with col3:
         locations = sorted({jd.get("location") for jd in jds.values() if jd.get("location")})
         loc_filter = st.selectbox("Location", ["All"] + locations)
     
     filtered = evals
     if min_score > 0:
-        filtered = [e for e in filtered if e.get("score",0) >= min_score]
+        filtered = [e for e in filtered if e.get('score', 0) >= min_score]
     if verdict_filter != "All":
-        filtered = [e for e in filtered if e.get("verdict") == verdict_filter]
+        filtered = [e for e in filtered if e.get('verdict') == verdict_filter]
     if loc_filter != "All":
-        filtered = [e for e in filtered if jds.get(e.get("jd_id"),{}).get("location") == loc_filter]
+        filtered = [e for e in filtered if jds.get(e.get('jd_id'), {}).get('location') == loc_filter]
     
     for e in filtered[:50]:
-        jd = jds.get(e.get("jd_id"), {})
-        st.markdown(f"""
-        **{e.get('candidate')}** | Score: {e.get('score'):.1f} | Verdict: {e.get('verdict')} | Job: {jd.get('title','N/A')} | Location: {jd.get('location','N/A')}
-        - **Missing Skills:** {', '.join(e.get('missing_skills',[]))}
-        - **Improvement Suggestions:** {', '.join(e.get('suggestions',[]))}
-        """)
+        jd = jds.get(e.get('jd_id'), {})
+        st.write(f"**{e.get('candidate')}** | Score: {e.get('score'):.1f} | Verdict: {e.get('verdict')} | Job: {jd.get('title','N/A')} | Location: {jd.get('location','N/A')}")
+        st.write(f"**Missing Skills:** {', '.join(e.get('missing_skills', []))}")
+        st.write(f"**Improvement Suggestions:** {', '.join(e.get('suggestions', []))}")
+        st.markdown("---")
 
 # ==================== Main ====================
 def main():
     if 'selected_tab' not in st.session_state:
-        st.session_state.selected_tab='dashboard'
+        st.session_state.selected_tab = 'dashboard'
     render_header()
     render_navigation()
     tab = st.session_state.get('selected_tab','dashboard')
-    if tab=='dashboard':
+    if tab == 'dashboard':
         render_dashboard()
-    elif tab=='upload':
+    elif tab == 'upload':
         render_upload_section()
-    elif tab=='jobs':
+    elif tab == 'jobs':
         render_jobs_section()
-    elif tab=='results':
+    elif tab == 'results':
         render_results_section()
 
 if __name__ == "__main__":

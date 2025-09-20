@@ -1,8 +1,18 @@
-import streamlit as st
+import sys
 from pathlib import Path
+import streamlit as st
 import json
+import pandas as pd
+import time
 from datetime import datetime
-from utils import parser, scorer, storage
+
+# ==================== Absolute-safe imports ====================
+# Add project root to sys.path
+PROJECT_ROOT = Path(__file__).parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+
+from utils import parser, scorer, storage  # Now safe regardless of run location
 
 # ==================== Page Config ====================
 st.set_page_config(
@@ -72,31 +82,23 @@ def render_dashboard():
 # ==================== Upload Resumes ====================
 def render_upload_section():
     st.subheader("📤 Upload Resumes")
-    uploaded_files = st.file_uploader("Select resumes (PDF or DOCX)",accept_multiple_files=True)
+    uploaded_files = st.file_uploader("Select resumes",accept_multiple_files=True)
     jd_id = st.text_input("Associated Job ID")
     if st.button("Process Upload") and uploaded_files and jd_id:
         for file in uploaded_files:
-            # Extract text
-            try:
-                text = parser.parse_resume(file)
-            except Exception as e:
-                st.error(f"Failed to parse {file.name}: {e}")
-                continue
-
-            # Compute score
-            score = scorer.calculate_final_score(
-                scorer.calculate_hard_match_score(text, storage.get_jd_text(jd_id)),
-                scorer.calculate_semantic_score(text, storage.get_jd_text(jd_id))
-            )
+            resume_text = parser.extract_text(file)
+            score = scorer.compute_score(resume_text)
             verdict = scorer.get_verdict(score)
-
-            # Store evaluation
+            missing_skills = scorer.get_missing_skills(resume_text, jd_id)
+            suggestions = scorer.get_improvement_suggestions(resume_text, jd_id)
             storage.add_evaluation({
-                "jd_id":jd_id,
-                "candidate":file.name,
-                "score":score,
-                "verdict":verdict,
-                "timestamp":str(datetime.now())
+                "jd_id": jd_id,
+                "candidate": file.name,
+                "score": score,
+                "verdict": verdict,
+                "missing_skills": missing_skills,
+                "suggestions": suggestions,
+                "timestamp": str(datetime.now())
             })
         st.success(f"{len(uploaded_files)} resumes processed and stored successfully!")
 
@@ -106,14 +108,12 @@ def render_jobs_section():
     job_title = st.text_input("Job Title")
     location = st.text_input("Location")
     jd_id = st.text_input("Job ID (Unique)")
-    jd_text = st.text_area("Job Description")
-    if st.button("Create Job Posting") and job_title and jd_id and jd_text:
+    if st.button("Create Job Posting") and job_title and jd_id:
         storage.add_jd({
-            "id":jd_id,
-            "title":job_title,
-            "location":location,
-            "description":jd_text,
-            "timestamp":str(datetime.now())
+            "id": jd_id,
+            "title": job_title,
+            "location": location,
+            "timestamp": str(datetime.now())
         })
         st.success(f"Job '{job_title}' created successfully!")
 
@@ -121,7 +121,7 @@ def render_jobs_section():
 def render_results_section():
     st.subheader("📋 Evaluation Results")
     evals = storage.list_evaluations()
-    jds = {jd["id"]:jd for jd in storage.list_jds()}
+    jds = {jd["id"]: jd for jd in storage.list_jds()}
     if not evals:
         st.info("No evaluations yet.")
         return
@@ -129,12 +129,12 @@ def render_results_section():
     # Filters
     col1,col2,col3=st.columns(3)
     with col1:
-        min_score = st.slider("Minimum Score",0,100,0)
+        min_score = st.slider("Minimum Score", 0, 100, 0)
     with col2:
-        verdict_filter = st.selectbox("Verdict",["All","High","Medium","Low"])
+        verdict_filter = st.selectbox("Verdict", ["All","High","Medium","Low"])
     with col3:
         locations = sorted({jd.get("location") for jd in jds.values() if jd.get("location")})
-        loc_filter = st.selectbox("Location",["All"]+locations)
+        loc_filter = st.selectbox("Location", ["All"]+locations)
     
     filtered = evals
     if min_score>0:
@@ -146,7 +146,15 @@ def render_results_section():
     
     for e in filtered[:50]:
         jd = jds.get(e.get('jd_id'),{})
-        st.write(f"**{e.get('candidate')}** | Score: {e.get('score'):.1f} | Verdict: {e.get('verdict')} | Job: {jd.get('title','N/A')} | Location: {jd.get('location','N/A')}")
+        st.markdown(f"""
+        **Candidate:** {e.get('candidate')}  
+        **Job:** {jd.get('title','N/A')} | **Location:** {jd.get('location','N/A')}  
+        **Relevance Score:** {e.get('score',0):.1f}  
+        **Verdict:** {e.get('verdict')}  
+        **Missing Skills/Projects/Certifications:** {', '.join(e.get('missing_skills',[])) if e.get('missing_skills') else 'None'}  
+        **Suggestions for Improvement:** {', '.join(e.get('suggestions',[])) if e.get('suggestions') else 'None'}  
+        ---
+        """)
 
 # ==================== Main ====================
 def main():

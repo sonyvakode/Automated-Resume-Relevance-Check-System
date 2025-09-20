@@ -137,8 +137,8 @@ def render_results_section():
     for e in filtered[:50]:
         jd = jds.get(e.get("jd_id"), {})
         st.write(f"**{e.get('candidate')}** | Score: {e.get('score'):.1f} | Verdict: {e.get('verdict')} | Job: {jd.get('title','N/A')} | Location: {jd.get('location','N/A')}")
-        st.write(f"Missing Skills: {e.get('missing_skills')}")
-        st.write(f"Suggestions: {e.get('suggestions')}")
+        st.write(f"**Missing Skills:** {e.get('missing_skills')}")
+        st.write(f"**Improvement Suggestions:** {e.get('suggestions')}")
         st.markdown("---")
 
 # ==================== Main ====================

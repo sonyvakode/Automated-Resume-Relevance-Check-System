@@ -1,10 +1,8 @@
 import streamlit as st
 from pathlib import Path
 import json
-import pandas as pd
-import time
 from datetime import datetime
-from utils import parser, scorer, storage  # Make sure your storage.py handles JSON DB
+from utils import parser, scorer, storage
 
 # ==================== Page Config ====================
 st.set_page_config(
@@ -21,8 +19,6 @@ def render_header():
         <h1 style="color: #2d3748; font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">
             🧠 Automated Resume Relevance Check System
         </h1>
-        
-            
     </div>
     ''', unsafe_allow_html=True)
 
@@ -76,13 +72,25 @@ def render_dashboard():
 # ==================== Upload Resumes ====================
 def render_upload_section():
     st.subheader("📤 Upload Resumes")
-    uploaded_files = st.file_uploader("Select resumes",accept_multiple_files=True)
+    uploaded_files = st.file_uploader("Select resumes (PDF or DOCX)",accept_multiple_files=True)
     jd_id = st.text_input("Associated Job ID")
     if st.button("Process Upload") and uploaded_files and jd_id:
         for file in uploaded_files:
-            text = parser.extract_text(file)
-            score = scorer.compute_score(text)
+            # Extract text
+            try:
+                text = parser.parse_resume(file)
+            except Exception as e:
+                st.error(f"Failed to parse {file.name}: {e}")
+                continue
+
+            # Compute score
+            score = scorer.calculate_final_score(
+                scorer.calculate_hard_match_score(text, storage.get_jd_text(jd_id)),
+                scorer.calculate_semantic_score(text, storage.get_jd_text(jd_id))
+            )
             verdict = scorer.get_verdict(score)
+
+            # Store evaluation
             storage.add_evaluation({
                 "jd_id":jd_id,
                 "candidate":file.name,
@@ -98,11 +106,13 @@ def render_jobs_section():
     job_title = st.text_input("Job Title")
     location = st.text_input("Location")
     jd_id = st.text_input("Job ID (Unique)")
-    if st.button("Create Job Posting") and job_title and jd_id:
+    jd_text = st.text_area("Job Description")
+    if st.button("Create Job Posting") and job_title and jd_id and jd_text:
         storage.add_jd({
             "id":jd_id,
             "title":job_title,
             "location":location,
+            "description":jd_text,
             "timestamp":str(datetime.now())
         })
         st.success(f"Job '{job_title}' created successfully!")

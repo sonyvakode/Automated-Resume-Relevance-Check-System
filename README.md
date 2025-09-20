@@ -1,153 +1,133 @@
-# Automated Resume Relevance Check System (MVP)
+# Automated Resume Relevance Check System
 
-This is an MVP for the **Automated Resume Relevance Check System** designed for placement teams.
-Sure! Here’s a complete **README.md** tailored for your **Automated Resume Relevance Check System (ARRCS)** project with instructions, features, and setup details:
+## Overview
+At Innomatics Research Labs, the process of evaluating resumes is currently manual, inconsistent, and time-consuming. Each week, placement teams across Hyderabad, Bangalore, Pune, and Delhi NCR receive 18–20 job requirements, with each posting attracting thousands of applications.  
 
-```markdown
-# 🧠 Automated Resume Relevance Check System (ARRCS)
-
-ARRCS is an AI-powered system to automatically evaluate resumes against job postings. It provides a **Relevance Score**, missing skills/projects/certifications, and verdicts (High/Medium/Low suitability). The system also stores results in a database for easy search and filtering by placement teams.
-
----
-
-## 🌟 Features
-
-- **Resume Evaluation**
-  - Computes **Relevance Score (0–100)**
-  - Identifies **missing skills, projects, certifications**
-  - Provides **Verdict** (High / Medium / Low)
-  - Suggestions for **candidate improvement**
-- **Job Management**
-  - Add new job postings with **title, location, and job ID**
-- **Dashboard**
-  - Displays total resumes processed, weekly job requirements, high-quality matches, and average processing time
-- **Results Storage & Filtering**
-  - Stores evaluation results in a **JSON database**
-  - Filter/search results by **score, verdict, job location**
-- **User-friendly UI**
-  - Built with **Streamlit**
-  - Supports **upload of multiple resumes (PDF, DOCX, TXT)**
+This system automates resume evaluation to:
+- Generate a **Relevance Score** (0–100) for each resume per job role.
+- Highlight **missing skills, certifications, or projects**.
+- Provide a **fit verdict** (High / Medium / Low suitability) for recruiters.
+- Offer **personalized improvement feedback** to students.
+- Store evaluations in a **web-based dashboard** accessible to the placement team.
 
 ---
 
-## 🛠️ Tech Stack
+## Problem Statement
+Manual resume evaluation causes:
+- Delays in shortlisting candidates.
+- Inconsistent judgments due to evaluator subjectivity.
+- High workload for placement staff, reducing focus on interview prep and student guidance.
 
-- **Python 3.10+**
-- **Streamlit** – UI framework
-- **PyPDF2** – PDF resume parsing
-- **python-docx** – DOCX resume parsing
-- **pandas** – Data handling
-- **JSON** – Simple storage for resumes and job postings
-
----
-
-## 📂 Project Structure
-
-```
-
-automated\_resume\_relevance\_checker/
-├── app.py                  # Main Streamlit application
-├── utils/
-│   ├── **init**.py
-│   ├── parser.py           # Resume text extraction
-│   ├── scorer.py           # Resume scoring logic
-│   └── storage.py          # JSON database handling
-├── data/
-│   ├── evaluations.json    # Stored evaluation results
-│   └── jds.json            # Stored job postings
-├── requirements.txt        # Required Python packages
-└── README.md
-
-````
+With companies expecting fast and high-quality shortlists, an **automated, scalable, and consistent system** is required.
 
 ---
 
-## ⚡ Installation & Setup
+## Objective
+The Automated Resume Relevance Check System aims to:
+- Automate resume evaluation against job requirements at scale.
+- Provide actionable feedback to students.
+- Maintain a searchable database of evaluations for the placement team.
 
-1. **Clone the repository**
+---
+
+## Sample Data
+You can download sample data [here](#).
+
+---
+
+## Proposed Solution
+We propose an **AI-powered resume evaluation engine** that combines:
+1. **Rule-based checks** (keyword/skill matching).
+2. **LLM-based semantic understanding**.
+
+### Features:
+- Accept resumes (PDF/DOCX) uploaded by students.
+- Accept job descriptions uploaded by the placement team.
+- Extract text, normalize formats, and parse sections.
+- Perform **hard match** (keywords, skills, education) and **semantic match** (embeddings + LLM reasoning).
+- Generate **Relevance Score, Missing Elements, and Verdict**.
+- Store results in a searchable web dashboard.
+
+---
+
+## Workflow
+
+1. **Job Requirement Upload**
+   - Placement team uploads job descriptions (JD).
+
+2. **Resume Upload**
+   - Students upload resumes while applying.
+
+3. **Resume Parsing**
+   - Extract text from PDF/DOCX.
+   - Standardize formats (remove headers/footers, normalize sections).
+
+4. **JD Parsing**
+   - Extract role title, must-have skills, good-to-have skills, and qualifications.
+
+5. **Relevance Analysis**
+   - **Hard Match:** Keyword & skill check (exact and fuzzy matches).
+   - **Semantic Match:** Embedding similarity between resume and JD using LLMs.
+   - **Scoring & Verdict:** Weighted scoring formula for final score.
+
+6. **Output Generation**
+   - Relevance Score (0–100).
+   - Missing Skills/Projects/Certifications.
+   - Verdict (High / Medium / Low suitability).
+   - Suggestions for student improvement.
+
+7. **Storage & Access**
+   - Results stored in the database.
+   - Placement team can search/filter resumes by job role, score, and location.
+
+8. **Web Application**
+   - Placement team dashboard to upload JD and view shortlisted resumes.
+
+---
+
+## Tech Stack
+
+### Core Resume Parsing, AI & Scoring
+- **Python** – Primary programming language.
+- **PDF/DOCX Parsing:** `PyMuPDF`, `pdfplumber`, `python-docx`, `docx2txt`
+- **NLP:** `spaCy`, `NLTK`
+- **LLM Orchestration:** `LangChain`, `LangGraph`, `LangSmith`
+- **Vector Stores:** `Chroma`, `FAISS`, `Pinecone`
+- **LLM Models:** OpenAI GPT, Gemini, Claude, HuggingFace models
+- **Keyword Matching:** TF-IDF, BM25, fuzzy matching
+- **Semantic Matching:** Embeddings + cosine similarity
+- **Scoring:** Weighted combination of hard and soft matches
+
+### Web Application
+- **Backend:** Flask / FastAPI – API to process uploads, run evaluation, and serve results
+- **Frontend (MVP):** Streamlit – Dashboard for upload and review
+- **Database:** SQLite / PostgreSQL – Stores results, metadata, and audit logs
+
+---
+
+## Features
+- Automated resume evaluation with **speed and accuracy**.
+- Provides **personalized improvement feedback** for students.
+- **Searchable dashboard** for placement teams.
+- Handles **thousands of resumes weekly**.
+- Combines **hard keyword checks** with **contextual semantic understanding**.
+
+---
+
+## Installation & Setup
+
 ```bash
-git clone https://github.com/yourusername/automated_resume_relevance_checker.git
-cd automated_resume_relevance_checker
-````
+# Clone repository
+git clone https://github.com/sonyvakode/resume-relevance-check.git
+cd resume-relevance-check
 
-2. **Install dependencies**
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
 
-```bash
+# Install dependencies
 pip install -r requirements.txt
-```
 
-Or manually:
-
-```bash
-pip install streamlit PyPDF2 python-docx pandas
-```
-
-3. **Run the Streamlit app**
-
-```bash
+# Run Streamlit app
 streamlit run app.py
-```
-
-4. **Open in browser**
-   The app will automatically open at `http://localhost:8501`.
-
----
-
-## 📝 Usage
-
-1. **Dashboard**
-
-   * View metrics like total resumes processed, active jobs, high-quality matches.
-
-2. **Upload Resumes**
-
-   * Upload multiple resumes (PDF, DOCX, TXT)
-   * Associate each with a Job ID
-   * Scores and verdicts are computed automatically
-
-3. **Jobs**
-
-   * Add new job postings with `Job ID`, `Job Title`, and `Location`
-
-4. **Results**
-
-   * Filter resumes by:
-
-     * Minimum Score
-     * Verdict (High / Medium / Low)
-     * Location
-   * View candidate name, score, verdict, job title, and location
-
----
-
-## 📌 Notes
-
-* Ensure **PyPDF2** and **python-docx** are installed for PDF/DOCX support
-* All data is stored in JSON files (`data/evaluations.json` and `data/jds.json`) for simplicity
-* You can expand `scorer.py` to include **missing skills/projects/certifications analysis** using AI/ML models
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature-name`)
-3. Make your changes
-4. Commit changes (`git commit -m "Add feature"`)
-5. Push to branch (`git push origin feature-name`)
-6. Create a Pull Request
-
----
-
-## 📄 License
-
-MIT License. See `LICENSE` file for details.
-
----
-
-```
-
-If you want, I can also create a **ready `requirements.txt`** and a **minimal JSON DB template** so your app is plug-and-play.  
-
-Do you want me to do that next?
-```

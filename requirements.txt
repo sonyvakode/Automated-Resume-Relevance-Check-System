@@ -3,3 +3,4 @@ fitz
 PyMuPDF
 docx2txt
 pandas
+pip install PyMuPDF

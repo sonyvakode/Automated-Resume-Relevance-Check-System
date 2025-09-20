@@ -43,8 +43,8 @@ def render_navigation():
 
 # ==================== Dashboard ====================
 def render_metrics():
-    evals = storage.list_evaluations()
-    jds = storage.list_jds()
+    evals = storage_module.list_evaluations()
+    jds = storage_module.list_jds()
     total_resumes = len(evals)
     active_jobs = len(jds)
     high_quality_matches = len([e for e in evals if e.get('score',0)>=80])
@@ -52,13 +52,13 @@ def render_metrics():
     
     col1,col2,col3,col4=st.columns(4)
     with col1:
-        st.metric("Total Resumes Processed",total_resumes)
+        st.metric("Total Resumes Processed", total_resumes)
     with col2:
-        st.metric("Weekly Job Requirements",active_jobs)
+        st.metric("Weekly Job Requirements", active_jobs)
     with col3:
-        st.metric("Avg Processing Time",avg_processing_time)
+        st.metric("Avg Processing Time", avg_processing_time)
     with col4:
-        st.metric("High Quality Matches",high_quality_matches)
+        st.metric("High Quality Matches", high_quality_matches)
 
 def render_dashboard():
     render_metrics()
@@ -72,7 +72,6 @@ def render_dashboard():
         if st.button("Create New Job Posting"):
             st.session_state.selected_tab='jobs'
             st.rerun()
-
 
 # ==================== Upload Resumes ====================
 def render_upload_section():

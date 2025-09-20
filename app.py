@@ -4,7 +4,19 @@ import json
 import pandas as pd
 import time
 from datetime import datetime
-from utils import parser, scorer, storage  # Make sure your storage.py handles JSON DB
+import sys
+import os
+
+# ----------------- Absolute-safe import fix -----------------
+# Add the utils folder to sys.path so Python can always find it
+current_dir = Path(__file__).parent
+utils_path = current_dir / "utils"
+sys.path.append(str(utils_path))
+
+import parser
+import scorer
+import storage
+# ------------------------------------------------------------
 
 # ==================== Page Config ====================
 st.set_page_config(
@@ -21,8 +33,6 @@ def render_header():
         <h1 style="color: #2d3748; font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">
             🧠 Automated Resume Relevance Check System
         </h1>
-        
-            
     </div>
     ''', unsafe_allow_html=True)
 

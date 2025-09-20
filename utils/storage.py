@@ -1,31 +1,32 @@
 import json
 from pathlib import Path
 
-DB_EVAL = Path("data/evaluations.json")
-DB_JD = Path("data/jds.json")
+DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR.mkdir(exist_ok=True)
+
+EVAL_FILE = DATA_DIR / "evaluations.json"
+JD_FILE = DATA_DIR / "jds.json"
 
 def _load(file):
     if file.exists():
-        with open(file,"r") as f:
-            return json.load(f)
+        return json.loads(file.read_text())
     return []
 
 def _save(file, data):
-    with open(file,"w") as f:
-        json.dump(data,data,f,indent=4)
+    file.write_text(json.dumps(data, indent=2))
+
+def add_evaluation(evaluation):
+    data = _load(EVAL_FILE)
+    data.append(evaluation)
+    _save(EVAL_FILE, data)
 
 def list_evaluations():
-    return _load(DB_EVAL)
+    return _load(EVAL_FILE)
 
-def add_evaluation(record):
-    data = _load(DB_EVAL)
-    data.append(record)
-    _save(DB_EVAL,data)
+def add_jd(jd):
+    data = _load(JD_FILE)
+    data.append(jd)
+    _save(JD_FILE, data)
 
 def list_jds():
-    return _load(DB_JD)
-
-def add_jd(record):
-    data = _load(DB_JD)
-    data.append(record)
-    _save(DB_JD,data)
+    return _load(JD_FILE)

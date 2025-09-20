@@ -1,6 +1,5 @@
-def compute_score(resume_text):
-    """Dummy scoring function (0-100)"""
-    return min(100, max(0, len(resume_text.split())//5))
+def compute_score(text):
+    return min(100, max(0, len(text.split()) // 5))
 
 def get_verdict(score):
     if score >= 80:
@@ -11,9 +10,8 @@ def get_verdict(score):
         return "Low"
 
 def get_missing_skills(resume_text, jd_id=None):
-    dummy_skills = ["Python","SQL","Machine Learning","Communication"]
-    missing = [s for s in dummy_skills if s.lower() not in resume_text.lower()]
-    return missing
+    dummy_skills = ["Python", "SQL", "Machine Learning", "Communication"]
+    return [s for s in dummy_skills if s.lower() not in resume_text.lower()]
 
 def get_improvement_suggestions(resume_text, jd_id=None):
     suggestions = []

@@ -1,47 +1,23 @@
-import io, pdfplumber
+import fitz  # PyMuPDF
+import docx2txt
 
-def extract_text_from_file(uploaded_file):
-    name = getattr(uploaded_file, "name", "uploaded_file")
-    lower = name.lower()
-    try:
-        if lower.endswith(".pdf"):
-            return extract_text_pdf(uploaded_file)
-        elif lower.endswith(".docx"):
-            return extract_text_docx(uploaded_file)
-        else:
-            # assume txt or others
-            content = uploaded_file.read()
-            if isinstance(content, bytes):
-                try:
-                    return content.decode("utf-8", errors="ignore")
-                except:
-                    return str(content)
-            return str(content)
-    finally:
-        try:
-            uploaded_file.seek(0)
-        except:
-            pass
+def extract_text_from_pdf(pdf_path):
+    """Extract text from a PDF file"""
+    text = ""
+    with fitz.open(pdf_path) as doc:
+        for page in doc:
+            text += page.get_text()
+    return text
 
-def extract_text_pdf(file_obj):
-    text = []
-    with pdfplumber.open(file_obj) as pdf:
-        for page in pdf.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text.append(page_text)
-    return "\n".join(text)
+def extract_text_from_docx(docx_path):
+    """Extract text from a DOCX file"""
+    return docx2txt.process(docx_path)
 
-def extract_text_docx(file_obj):
-    try:
-        from docx import Document
-        content = file_obj.read()
-        import io
-        f = io.BytesIO(content)
-        doc = Document(f)
-        parts = []
-        for p in doc.paragraphs:
-            parts.append(p.text)
-        return "\n".join(parts)
-    except Exception:
-        return ""
+def parse_resume(file_path):
+    """Detect file type and extract text"""
+    if file_path.lower().endswith(".pdf"):
+        return extract_text_from_pdf(file_path)
+    elif file_path.lower().endswith(".docx"):
+        return extract_text_from_docx(file_path)
+    else:
+        raise ValueError("Unsupported file format. Use PDF or DOCX.")

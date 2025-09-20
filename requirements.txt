@@ -2,3 +2,4 @@ streamlit
 fitz
 PyMuPDF
 docx2txt
+pandas
